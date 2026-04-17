@@ -11,7 +11,14 @@
       "Bash(docker version *)",
       "Bash(docker compose *)",
       "Bash(docker exec ds_historian_tsdb *)",
-      "Bash(docker exec *)"
+      "Bash(docker exec *)",
+      "Bash(npx vitest *)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist /FI \"PID eq 5480\" /V)",
+      "Bash(wmic process *)",
+      "Read(//c/Hansung_Project/**)",
+      "Read(//c/Hansung_Project/mosquitto_config/**)",
+      "Bash(node scripts/mqtt-probe.mjs)"
     ]
   }
 }
