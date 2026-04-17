@@ -1,0 +1,41 @@
+═══════════════════════════════════════════════════════════
+Historian 개발 메모 (미해결 / 주의 사항)
+═══════════════════════════════════════════════════════════
+최종 업데이트: 2026-04-17
+
+
+[H3 이후 미해결]
+
+1. Broker 계정/ACL 미적용
+   - 작업명세서 §5.1·§1.2.5는 historian 계정 + Subscribe-only ACL 요구
+   - 현재 로컬 Mosquitto는 anonymous 허용 상태로 실행 중
+     · WebCapstone/mosquitto_config/mosquitto.conf는 C:\Hansung_Project\mosquitto_config\...
+       경로를 참조하나 해당 경로는 존재하지 않음 (실행 중인 broker가 이 conf를 쓰지 않음)
+     · 실측 probe 결과: anonymous / historian / 잘못된 mes_server 모두 CONNECTED
+   - 영향: 개발 연결 테스트는 통과하나, 운영 배포 전 반드시 ACL 적용 필요
+   - 조치 예정: broker 저장소에서 historian 계정 추가 + ACL 수정
+
+
+[진단용 파일 (커밋 제외 권장)]
+
+- scripts/mqtt-probe.mjs
+  · broker 인증 상태 진단용 일회성 스크립트
+  · H3에서 anonymous 여부 확인에 사용
+  · 커밋 시 .gitignore 추가하거나 삭제
+
+
+[로컬 개발 환경 주의]
+
+- TimescaleDB 컨테이너는 docker compose stop/start로 On/Off 자유
+  · restart: unless-stopped로 OS 재부팅 시 자동 복구
+  · H5 이후 적재 구현 시부터 필수 가동
+
+- .env 파일은 gitignore 처리됨 (TSDB_PASSWORD 포함)
+  · 다른 환경에서는 .env.example을 복사해 재생성 필요
+
+
+[npm audit — 5 moderate]
+
+- 전이 의존성 취약점 5건 존재 (npm install 시 경고)
+- npm audit fix --force는 breaking change 동반 가능 → H10 통합 테스트 후 별도 검토
+═══════════════════════════════════════════════════════════

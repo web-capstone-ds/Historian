@@ -1,6 +1,7 @@
 import { loadEnv } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { HistorianMqttClient } from './mqtt/client.js';
+import { routeMessage } from './mqtt/router.js';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -14,15 +15,10 @@ async function main(): Promise<void> {
     'Historian bootstrapping',
   );
 
-  // H4(라우터) 적용 전 임시 핸들러: 수신 토픽과 페이로드 길이만 로깅
   const mqttClient = new HistorianMqttClient({
     env,
     onMessage: (topic, payload) => {
-      if (payload.length === 0) {
-        logger.debug({ topic }, 'Empty payload (retained clear), ignoring');
-        return;
-      }
-      logger.debug({ topic, bytes: payload.length }, 'Message received');
+      void routeMessage(topic, payload);
     },
   });
 

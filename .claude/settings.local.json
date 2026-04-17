@@ -18,7 +18,8 @@
       "Bash(wmic process *)",
       "Read(//c/Hansung_Project/**)",
       "Read(//c/Hansung_Project/mosquitto_config/**)",
-      "Bash(node scripts/mqtt-probe.mjs)"
+      "Bash(node scripts/mqtt-probe.mjs)",
+      "Bash(powershell.exe -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,StartTime,CPU | Format-Table -AutoSize\")"
     ]
   }
 }
