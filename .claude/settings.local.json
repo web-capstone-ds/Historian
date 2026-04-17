@@ -7,7 +7,11 @@
       "Bash(node --experimental-strip-types --no-warnings src/index.ts)",
       "Bash(echo \"exit=$?\")",
       "Bash(npx tsx *)",
-      "Bash(MQTT_BROKER_URL=mqtt://localhost:1883 MQTT_USERNAME=historian MQTT_CLIENT_ID=ds_historian_001 TSDB_HOST=localhost TSDB_PORT=5432 TSDB_DATABASE=ds_historian TSDB_USER=historian npx tsx src/index.ts)"
+      "Bash(MQTT_BROKER_URL=mqtt://localhost:1883 MQTT_USERNAME=historian MQTT_CLIENT_ID=ds_historian_001 TSDB_HOST=localhost TSDB_PORT=5432 TSDB_DATABASE=ds_historian TSDB_USER=historian npx tsx src/index.ts)",
+      "Bash(docker version *)",
+      "Bash(docker compose *)",
+      "Bash(docker exec ds_historian_tsdb *)",
+      "Bash(docker exec *)"
     ]
   }
 }
