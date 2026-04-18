@@ -1,5 +1,6 @@
 import { logger } from '../utils/logger.js';
 import { getPool, type DbPool } from '../db/pool.js';
+import { BatchInserter } from '../db/batch-inserter.js';
 
 // 작업명세서 §3.2 / §6.2 INSPECTION_RESULT 페이로드
 export interface InspectionPayload {
@@ -29,26 +30,29 @@ export interface InspectionPayload {
   };
 }
 
-const INSERT_SQL = `
-  INSERT INTO inspection_results (
-    time, message_id, equipment_id, lot_id, unit_id, strip_id,
-    recipe_id, recipe_version, operator_id,
-    overall_result, fail_reason_code, fail_count, total_inspected_count,
-    inspection_duration_ms, takt_time_ms, algorithm_version,
-    inspection_detail, geometric, bga, surface, singulation
-  ) VALUES (
-    $1, $2, $3, $4, $5, $6,
-    $7, $8, $9,
-    $10, $11, $12, $13,
-    $14, $15, $16,
-    $17, $18, $19, $20, $21
-  )
+const INSERT_COLUMNS = `
+  time, message_id, equipment_id, lot_id, unit_id, strip_id,
+  recipe_id, recipe_version, operator_id,
+  overall_result, fail_reason_code, fail_count, total_inspected_count,
+  inspection_duration_ms, takt_time_ms, algorithm_version,
+  inspection_detail, geometric, bga, surface, singulation
 `;
+
+const COLUMNS_PER_ROW = 21;
+
+const INSERT_PREFIX = `INSERT INTO inspection_results (${INSERT_COLUMNS})`;
+
+const SINGLE_INSERT_SQL = `${INSERT_PREFIX} VALUES (
+  $1, $2, $3, $4, $5, $6,
+  $7, $8, $9,
+  $10, $11, $12, $13,
+  $14, $15, $16,
+  $17, $18, $19, $20, $21
+)`;
 
 function parsePayload(payload: Buffer): InspectionPayload | null {
   try {
-    const obj = JSON.parse(payload.toString('utf8')) as InspectionPayload;
-    return obj;
+    return JSON.parse(payload.toString('utf8')) as InspectionPayload;
   } catch (err) {
     logger.error(
       { err: err instanceof Error ? err.message : String(err) },
@@ -63,44 +67,78 @@ export function isPassDrop(msg: InspectionPayload): boolean {
   return msg.overall_result === 'PASS' && msg.fail_count === 0;
 }
 
-export async function insertInspectionResult(
-  pool: DbPool,
-  msg: InspectionPayload,
-): Promise<void> {
+// 공통 파라미터 직렬화 — 단건/배치 경로 공유
+export function serializeInspectionRow(msg: InspectionPayload): unknown[] {
   const pass = isPassDrop(msg);
-
-  // PASS drop: detail 그룹 전부 NULL (JSONB 컬럼은 JSON 문자열로 직렬화)
   const inspectionDetail = pass ? null : JSON.stringify(msg.inspection_detail ?? null);
   const geometric = pass ? null : JSON.stringify(msg.geometric ?? null);
   const bga = pass ? null : JSON.stringify(msg.bga ?? null);
   const surface = pass ? null : JSON.stringify(msg.surface ?? null);
   const singulation = pass ? null : JSON.stringify(msg.singulation ?? null);
 
-  const params = [
-    msg.timestamp, // $1 time — 원본 ISO 8601 UTC 그대로
-    msg.message_id, // $2
-    msg.equipment_id, // $3
-    msg.lot_id, // $4
-    msg.unit_id, // $5
-    msg.strip_id, // $6
-    msg.recipe_id, // $7
-    msg.recipe_version, // $8
-    msg.operator_id, // $9
-    msg.overall_result, // $10
-    msg.fail_reason_code, // $11
-    msg.fail_count, // $12
-    msg.total_inspected_count, // $13
-    msg.process.inspection_duration_ms, // $14
-    msg.process.takt_time_ms, // $15
-    msg.process.algorithm_version, // $16
-    inspectionDetail, // $17
-    geometric, // $18
-    bga, // $19
-    surface, // $20
-    singulation, // $21
+  return [
+    msg.timestamp,
+    msg.message_id,
+    msg.equipment_id,
+    msg.lot_id,
+    msg.unit_id,
+    msg.strip_id,
+    msg.recipe_id,
+    msg.recipe_version,
+    msg.operator_id,
+    msg.overall_result,
+    msg.fail_reason_code,
+    msg.fail_count,
+    msg.total_inspected_count,
+    msg.process.inspection_duration_ms,
+    msg.process.takt_time_ms,
+    msg.process.algorithm_version,
+    inspectionDetail,
+    geometric,
+    bga,
+    surface,
+    singulation,
   ];
+}
 
-  await pool.query(INSERT_SQL, params);
+// 단건 insert — 테스트 및 비-배치 경로용
+export async function insertInspectionResult(
+  pool: DbPool,
+  msg: InspectionPayload,
+): Promise<void> {
+  await pool.query(SINGLE_INSERT_SQL, serializeInspectionRow(msg));
+}
+
+// 배치 인서터 — index.ts에서 초기화
+let batchInserter: BatchInserter<InspectionPayload> | null = null;
+
+export function initInspectionBatchInserter(
+  pool: DbPool,
+  size: number,
+  flushIntervalMs: number,
+): BatchInserter<InspectionPayload> {
+  if (batchInserter) return batchInserter;
+  batchInserter = new BatchInserter<InspectionPayload>({
+    name: 'inspection_results',
+    pool,
+    size,
+    flushIntervalMs,
+    columnsPerRow: COLUMNS_PER_ROW,
+    insertPrefix: INSERT_PREFIX,
+    serializeRow: serializeInspectionRow,
+  });
+  return batchInserter;
+}
+
+export function getInspectionBatchInserter(): BatchInserter<InspectionPayload> | null {
+  return batchInserter;
+}
+
+// 테스트 전용
+export function _setInspectionBatchInserterForTest(
+  inserter: BatchInserter<InspectionPayload> | null,
+): void {
+  batchInserter = inserter;
 }
 
 export async function handleInspectionResult(
@@ -110,7 +148,6 @@ export async function handleInspectionResult(
   const msg = parsePayload(payload);
   if (!msg) return;
 
-  // 토픽의 equipment_id와 페이로드의 equipment_id 불일치 감지 (경고만, 적재는 진행)
   if (msg.equipment_id !== equipmentId) {
     logger.warn(
       { topicEq: equipmentId, payloadEq: msg.equipment_id },
@@ -118,10 +155,9 @@ export async function handleInspectionResult(
     );
   }
 
-  const pool = getPool();
-
-  try {
-    await insertInspectionResult(pool, msg);
+  // 배치 인서터가 초기화돼 있으면 배치 경로, 아니면 단건 경로로 폴백
+  if (batchInserter) {
+    batchInserter.enqueue(msg);
     logger.debug(
       {
         equipmentId: msg.equipment_id,
@@ -130,7 +166,22 @@ export async function handleInspectionResult(
         overall: msg.overall_result,
         passDrop: isPassDrop(msg),
       },
-      'INSPECTION_RESULT inserted',
+      'INSPECTION_RESULT enqueued',
+    );
+    return;
+  }
+
+  try {
+    await insertInspectionResult(getPool(), msg);
+    logger.debug(
+      {
+        equipmentId: msg.equipment_id,
+        lotId: msg.lot_id,
+        unitId: msg.unit_id,
+        overall: msg.overall_result,
+        passDrop: isPassDrop(msg),
+      },
+      'INSPECTION_RESULT inserted (single)',
     );
   } catch (err) {
     logger.error(

@@ -2,7 +2,11 @@ import { loadEnv } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { HistorianMqttClient } from './mqtt/client.js';
 import { routeMessage } from './mqtt/router.js';
-import { initPool, closePool } from './db/pool.js';
+import { initPool, getPool, closePool } from './db/pool.js';
+import {
+  initInspectionBatchInserter,
+  getInspectionBatchInserter,
+} from './handlers/inspection.handler.js';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -17,6 +21,15 @@ async function main(): Promise<void> {
   );
 
   initPool(env);
+  initInspectionBatchInserter(
+    getPool(),
+    env.batch.size,
+    env.batch.flushIntervalMs,
+  );
+  logger.info(
+    { batchSize: env.batch.size, flushIntervalMs: env.batch.flushIntervalMs },
+    'Inspection batch inserter ready',
+  );
 
   const mqttClient = new HistorianMqttClient({
     env,
@@ -35,6 +48,15 @@ async function main(): Promise<void> {
       logger.error(
         { err: err instanceof Error ? err.message : String(err) },
         'Error during MQTT shutdown',
+      );
+    }
+    try {
+      const inserter = getInspectionBatchInserter();
+      if (inserter) await inserter.stop();
+    } catch (err) {
+      logger.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'Error during batch inserter shutdown',
       );
     }
     try {
