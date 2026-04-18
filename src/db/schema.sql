@@ -235,5 +235,30 @@ SELECT add_retention_policy('control_commands',   INTERVAL '365 days', if_not_ex
 SELECT add_retention_policy('oracle_analyses',    INTERVAL '365 days', if_not_exists => TRUE);
 
 -- ─────────────────────────────────────────────────────────
--- §4.4 Continuous Aggregate (lot_yield_hourly)는 H9에서 정식 적용
+-- §4.4 Continuous Aggregate — lot_yield_hourly
+-- Oracle 레시피별 수율 쿼리 가속화 (EWMA+MAD 입력)
+-- 1시간 버킷, equipment_id+recipe_id 그룹핑, COMPLETED LOT만
 -- ─────────────────────────────────────────────────────────
+CREATE MATERIALIZED VIEW IF NOT EXISTS lot_yield_hourly
+WITH (timescaledb.continuous) AS
+SELECT
+    time_bucket('1 hour', time)     AS bucket,
+    equipment_id,
+    recipe_id,
+    COUNT(*)                        AS lot_count,
+    AVG(yield_pct)                  AS avg_yield,
+    MIN(yield_pct)                  AS min_yield,
+    MAX(yield_pct)                  AS max_yield,
+    AVG(lot_duration_sec)           AS avg_duration
+FROM lot_ends
+WHERE lot_status = 'COMPLETED'
+GROUP BY bucket, equipment_id, recipe_id
+WITH NO DATA;
+
+-- start_offset/end_offset는 최소 2버킷을 포함해야 함 (TSDB 제약)
+-- 명세서 §4.4의 '2h/1h' 조합은 1버킷이라 거부됨 → '3h/1h'로 보정
+SELECT add_continuous_aggregate_policy('lot_yield_hourly',
+    start_offset      => INTERVAL '3 hours',
+    end_offset        => INTERVAL '1 hour',
+    schedule_interval => INTERVAL '1 hour',
+    if_not_exists     => TRUE);
