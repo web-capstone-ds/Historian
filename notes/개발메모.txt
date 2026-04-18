@@ -33,6 +33,12 @@ Historian 개발 메모 (미해결 / 주의 사항)
 - .env 파일은 gitignore 처리됨 (TSDB_PASSWORD 포함)
   · 다른 환경에서는 .env.example을 복사해 재생성 필요
 
+- TSDB 호스트 포트: 5433 (H5에서 변경)
+  · 이유: 개발 머신에 Windows 네이티브 postgres.exe 서비스가 5432 점유 중
+  · docker-compose.yml 포트 매핑 "5433:5432" + .env TSDB_PORT=5433
+  · 컨테이너 내부는 여전히 5432 (compose 네트워크 내에서는 5432 사용)
+  · 다른 개발 머신에 충돌 없다면 5432로 되돌려도 무방
+
 
 [npm audit — 5 moderate]
 

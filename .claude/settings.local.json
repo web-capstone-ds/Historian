@@ -19,7 +19,15 @@
       "Read(//c/Hansung_Project/**)",
       "Read(//c/Hansung_Project/mosquitto_config/**)",
       "Bash(node scripts/mqtt-probe.mjs)",
-      "Bash(powershell.exe -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,StartTime,CPU | Format-Table -AutoSize\")"
+      "Bash(powershell.exe -Command \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id,StartTime,CPU | Format-Table -AutoSize\")",
+      "Bash(node scripts/h5-live-check.mjs)",
+      "Bash(PGPASSWORD=historian_dev psql -h localhost -p 5432 -U historian -d ds_historian -c \"SELECT 1\")",
+      "Bash(PGPASSWORD=historian_dev psql -h 127.0.0.1 -p 5432 -U historian -d ds_historian -c \"SELECT 1\")",
+      "Bash(PGPASSWORD='historian_dev' psql -h localhost -p 5432 -U historian -d postgres -c \"SELECT 1\")",
+      "Bash(tasklist /FI \"PID eq 26116\")",
+      "Bash(tasklist /FI \"PID eq 8176\")",
+      "Bash(tasklist //FI \"PID eq 26116\")",
+      "Bash(tasklist //FI \"PID eq 8176\")"
     ]
   }
 }

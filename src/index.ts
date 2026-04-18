@@ -2,6 +2,7 @@ import { loadEnv } from './config/env.js';
 import { logger } from './utils/logger.js';
 import { HistorianMqttClient } from './mqtt/client.js';
 import { routeMessage } from './mqtt/router.js';
+import { initPool, closePool } from './db/pool.js';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -14,6 +15,8 @@ async function main(): Promise<void> {
     },
     'Historian bootstrapping',
   );
+
+  initPool(env);
 
   const mqttClient = new HistorianMqttClient({
     env,
@@ -32,6 +35,14 @@ async function main(): Promise<void> {
       logger.error(
         { err: err instanceof Error ? err.message : String(err) },
         'Error during MQTT shutdown',
+      );
+    }
+    try {
+      await closePool();
+    } catch (err) {
+      logger.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        'Error during DB pool shutdown',
       );
     }
     process.exit(0);

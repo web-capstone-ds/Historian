@@ -13,3 +13,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# 진단용 일회성 스크립트 (개발메모 참조)
+scripts/mqtt-probe.mjs

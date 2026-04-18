@@ -3,7 +3,8 @@ services:
     image: timescale/timescaledb:latest-pg16
     container_name: ds_historian_tsdb
     ports:
-      - "5432:5432"
+      # 호스트 5433 ↔ 컨테이너 5432 (Windows 네이티브 postgres 5432 충돌 회피)
+      - "5433:5432"
     environment:
       POSTGRES_DB: ${TSDB_DATABASE:-ds_historian}
       POSTGRES_USER: ${TSDB_USER:-historian}
