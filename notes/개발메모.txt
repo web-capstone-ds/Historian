@@ -40,6 +40,15 @@ Historian 개발 메모 (미해결 / 주의 사항)
   · 다른 개발 머신에 충돌 없다면 5432로 되돌려도 무방
 
 
+[H6 스키마 변경 — message_id/burst_id/target_burst_id UUID → TEXT]
+
+- 사유: 합성 Mock(21/22/24/25/26/27)의 message_id가 'ctrl'/'ora' 등 hex 외 문자 포함
+  · 예: 7f3a1200-ctrl-4abc-b100-000000000021 → UUID 타입 파싱 거부
+- 변경 범위: 8개 테이블의 UUID 컬럼 전부 TEXT
+- 실측 EAP Guid.NewGuid() v4는 그대로 TEXT에 저장되므로 운영 영향 없음
+- 2026-04-18 H6 라이브 체크에서 volume 재초기화 + 재적재로 검증
+
+
 [npm audit — 5 moderate]
 
 - 전이 의존성 취약점 5건 존재 (npm install 시 경고)

@@ -27,7 +27,8 @@
       "Bash(tasklist /FI \"PID eq 26116\")",
       "Bash(tasklist /FI \"PID eq 8176\")",
       "Bash(tasklist //FI \"PID eq 26116\")",
-      "Bash(tasklist //FI \"PID eq 8176\")"
+      "Bash(tasklist //FI \"PID eq 8176\")",
+      "Bash(node scripts/h6-live-check.mjs)"
     ]
   }
 }

@@ -8,9 +8,11 @@ CREATE EXTENSION IF NOT EXISTS timescaledb;
 -- ─────────────────────────────────────────────────────────
 -- §4.2.1 heartbeats — HEARTBEAT
 -- ─────────────────────────────────────────────────────────
+-- message_id는 TEXT — 합성 Mock(21/22/24/25/26/27) message_id가 hex 외 문자를 포함하여 UUID 타입 거부
+-- 실측 EAP는 Guid.NewGuid() v4를 발행하므로 TEXT로도 호환
 CREATE TABLE IF NOT EXISTS heartbeats (
     time            TIMESTAMPTZ     NOT NULL,
-    message_id      UUID            NOT NULL,
+    message_id      TEXT            NOT NULL,
     equipment_id    TEXT            NOT NULL
 );
 
@@ -24,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_heartbeats_eq
 -- ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS status_updates (
     time                    TIMESTAMPTZ     NOT NULL,
-    message_id              UUID            NOT NULL,
+    message_id              TEXT            NOT NULL,
     equipment_id            TEXT            NOT NULL,
     equipment_status        TEXT            NOT NULL,
     lot_id                  TEXT            NOT NULL,
@@ -50,7 +52,7 @@ CREATE INDEX IF NOT EXISTS idx_status_eq_status
 -- ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS inspection_results (
     time                    TIMESTAMPTZ         NOT NULL,
-    message_id              UUID                NOT NULL,
+    message_id              TEXT                NOT NULL,
     equipment_id            TEXT                NOT NULL,
     lot_id                  TEXT                NOT NULL,
     unit_id                 TEXT                NOT NULL,
@@ -90,7 +92,7 @@ CREATE INDEX IF NOT EXISTS idx_insp_fail_reason
 -- ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS lot_ends (
     time                TIMESTAMPTZ         NOT NULL,
-    message_id          UUID                NOT NULL,
+    message_id          TEXT                NOT NULL,
     equipment_id        TEXT                NOT NULL,
     lot_id              TEXT                NOT NULL,
     lot_status          TEXT                NOT NULL,
@@ -119,7 +121,7 @@ CREATE INDEX IF NOT EXISTS idx_lot_yield
 -- ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS hw_alarms (
     time                            TIMESTAMPTZ     NOT NULL,
-    message_id                      UUID            NOT NULL,
+    message_id                      TEXT            NOT NULL,
     equipment_id                    TEXT            NOT NULL,
     equipment_status                TEXT            NOT NULL,
     alarm_level                     TEXT            NOT NULL,
@@ -129,7 +131,7 @@ CREATE TABLE IF NOT EXISTS hw_alarms (
     exception_detail                JSONB,
     auto_recovery_attempted         BOOLEAN         NOT NULL,
     requires_manual_intervention    BOOLEAN         NOT NULL,
-    burst_id                        UUID,
+    burst_id                        TEXT,
     burst_count                     INTEGER,
     lot_id                          TEXT,
     payload_raw                     JSONB           NOT NULL
@@ -155,7 +157,7 @@ CREATE INDEX IF NOT EXISTS idx_alarm_recovery
 -- ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS recipe_changes (
     time                        TIMESTAMPTZ     NOT NULL,
-    message_id                  UUID            NOT NULL,
+    message_id                  TEXT            NOT NULL,
     equipment_id                TEXT            NOT NULL,
     equipment_status            TEXT            NOT NULL,
     previous_recipe_id          TEXT            NOT NULL,
@@ -177,13 +179,13 @@ CREATE INDEX IF NOT EXISTS idx_recipe_new
 -- ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS control_commands (
     time                TIMESTAMPTZ     NOT NULL,
-    message_id          UUID            NOT NULL,
+    message_id          TEXT            NOT NULL,
     equipment_id        TEXT            NOT NULL,
     command             TEXT            NOT NULL,
     issued_by           TEXT            NOT NULL,
     reason              TEXT,
     target_lot_id       TEXT,
-    target_burst_id     UUID
+    target_burst_id     TEXT
 );
 
 SELECT create_hypertable('control_commands', 'time', if_not_exists => TRUE);
@@ -198,7 +200,7 @@ CREATE INDEX IF NOT EXISTS idx_ctrl_command
 -- ─────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS oracle_analyses (
     time                    TIMESTAMPTZ         NOT NULL,
-    message_id              UUID                NOT NULL,
+    message_id              TEXT                NOT NULL,
     equipment_id            TEXT                NOT NULL,
     lot_id                  TEXT                NOT NULL,
     recipe_id               TEXT                NOT NULL,
