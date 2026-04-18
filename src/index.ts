@@ -7,6 +7,7 @@ import {
   initInspectionBatchInserter,
   getInspectionBatchInserter,
 } from './handlers/inspection.handler.js';
+import { registerShutdownSignals } from './shutdown.js';
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -40,38 +41,14 @@ async function main(): Promise<void> {
 
   mqttClient.connect();
 
-  const shutdown = async (signal: string): Promise<void> => {
-    logger.info({ signal }, 'Shutdown signal received');
-    try {
-      await mqttClient.end(true);
-    } catch (err) {
-      logger.error(
-        { err: err instanceof Error ? err.message : String(err) },
-        'Error during MQTT shutdown',
-      );
-    }
-    try {
+  registerShutdownSignals({
+    stopBatchInserter: async () => {
       const inserter = getInspectionBatchInserter();
       if (inserter) await inserter.stop();
-    } catch (err) {
-      logger.error(
-        { err: err instanceof Error ? err.message : String(err) },
-        'Error during batch inserter shutdown',
-      );
-    }
-    try {
-      await closePool();
-    } catch (err) {
-      logger.error(
-        { err: err instanceof Error ? err.message : String(err) },
-        'Error during DB pool shutdown',
-      );
-    }
-    process.exit(0);
-  };
-
-  process.on('SIGINT', () => void shutdown('SIGINT'));
-  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+    },
+    endMqtt: () => mqttClient.end(true),
+    closeDbPool: () => closePool(),
+  });
 }
 
 main().catch((err) => {
