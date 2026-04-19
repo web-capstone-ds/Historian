@@ -32,7 +32,9 @@
       "Bash(node scripts/h7-live-check.mjs)",
       "Bash(LOG_LEVEL=warn node *)",
       "Bash(node scripts/h9-live-check.mjs)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(git rev-list *)",
+      "Bash(npm audit *)"
     ]
   }
 }
