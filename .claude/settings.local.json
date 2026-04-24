@@ -34,7 +34,11 @@
       "Bash(node scripts/h9-live-check.mjs)",
       "Bash(node *)",
       "Bash(git rev-list *)",
-      "Bash(npm audit *)"
+      "Bash(npm audit *)",
+      "Bash(git -C /c/Hansung_Project/WebCapstone/Historian log --all --oneline --source -- src/db/schema.sql)",
+      "Bash(git -C /c/Hansung_Project/WebCapstone/Historian log --all -p --follow -- src/db/schema.sql)",
+      "Bash(git -C /c/Hansung_Project/WebCapstone/Historian log --all -S 'timestamp' -- src/db/schema.sql)",
+      "Bash(docker start ds_historian_tsdb *)"
     ]
   }
 }

@@ -138,10 +138,10 @@ Oracle 서버는 LOT_END를 직접 구독(트리거)하되, 해당 LOT의 INSPEC
 | 쿼리 | 용도 | 조건 |
 | :--- | :--- | :--- |
 | LOT별 INSPECTION_RESULT 일괄 조회 | 2차 검증 분석 원시 데이터 | `WHERE lot_id = ? AND equipment_id = ?` |
-| 레시피별 최근 N LOT 수율 시계열 | EWMA+MAD 동적 임계값 계산 | `WHERE recipe_id = ? ORDER BY timestamp DESC LIMIT N` |
-| 레시피별 LOT 3개 평균 total_units | STATUS_UPDATE expected_total_units 계산 | `WHERE recipe_id = ? ORDER BY timestamp DESC LIMIT 3` |
-| 레시피별 ET 분포 통계 | Isolation Forest 특징 벡터 | `GROUP BY recipe_id, error_type` |
-| 장비별 알람 이력 | R26/R33/R34 카운터 보조 | `WHERE equipment_id = ? AND event_type = 'HW_ALARM'` |
+| 레시피별 최근 N LOT 수율 시계열 | EWMA+MAD 동적 임계값 계산 | `WHERE recipe_id = ? ORDER BY time DESC LIMIT N` |
+| 레시피별 LOT 3개 평균 total_units | STATUS_UPDATE expected_total_units 계산 | `WHERE recipe_id = ? ORDER BY time DESC LIMIT 3` |
+| 레시피별 ET 분포 통계 | Isolation Forest 특징 벡터 | `WHERE recipe_id = ? AND overall_result='FAIL' GROUP BY fail_reason_code` |
+| 장비별 알람 이력 | R26/R33/R34 카운터 보조 | `FROM hw_alarms WHERE equipment_id = ? AND time >= ?` |
 
 ### 3.4 Dispatcher 서버 데이터 공급
 
@@ -153,9 +153,9 @@ Dispatcher는 Historian TSDB에 **read-only** 권한으로 접근하여, 배치 
 
 ### 4.1 설계 원칙
 
-- **Hypertable**: `timestamp` 컬럼 기준 자동 파티셔닝 (TimescaleDB 핵심 기능)
+- **Hypertable**: `time` 컬럼 기준 자동 파티셔닝 (TimescaleDB 핵심 기능)
 - **JSON 저장**: detail 그룹은 `JSONB` 컬럼으로 유연하게 저장 (스키마 변경 최소화)
-- **인덱스 전략**: 고빈도 쿼리 패턴 (equipment_id + lot_id, recipe_id + timestamp)에 복합 인덱스
+- **인덱스 전략**: 고빈도 쿼리 패턴 (equipment_id + lot_id, recipe_id + time)에 복합 인덱스
 - **Retention Policy**: TimescaleDB 자동 데이터 보존 정책 (heartbeat/status 90일, 나머지 365일)
 
 ### 4.2 테이블 구조
