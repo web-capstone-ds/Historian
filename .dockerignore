@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+.git
+.claude
+*.log
+notes
+scripts
+test
+명세서
