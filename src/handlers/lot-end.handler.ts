@@ -35,7 +35,7 @@ function parsePayload(payload: Buffer): LotEndPayload | null {
     return JSON.parse(payload.toString('utf8')) as LotEndPayload;
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err },
       'LOT_END JSON parse failed, dropping message',
     );
     return null;
@@ -103,7 +103,7 @@ export async function handleLotEnd(
   } catch (err) {
     logger.error(
       {
-        err: err instanceof Error ? err.message : String(err),
+        err,
         equipmentId: msg.equipment_id,
         lotId: msg.lot_id,
       },

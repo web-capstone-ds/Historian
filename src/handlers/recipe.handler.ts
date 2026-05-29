@@ -31,7 +31,7 @@ function parsePayload(payload: Buffer): RecipeChangedPayload | null {
     return JSON.parse(payload.toString('utf8')) as RecipeChangedPayload;
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err },
       'RECIPE_CHANGED JSON parse failed, dropping message',
     );
     return null;
@@ -86,7 +86,7 @@ export async function handleRecipeChanged(
   } catch (err) {
     logger.error(
       {
-        err: err instanceof Error ? err.message : String(err),
+        err,
         equipmentId: msg.equipment_id,
         newRecipeId: msg.new_recipe_id,
       },

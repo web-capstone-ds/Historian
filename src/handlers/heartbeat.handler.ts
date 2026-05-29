@@ -18,7 +18,7 @@ function parsePayload(payload: Buffer): HeartbeatPayload | null {
     return JSON.parse(payload.toString('utf8')) as HeartbeatPayload;
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err },
       'HEARTBEAT JSON parse failed, dropping message',
     );
     return null;
@@ -51,7 +51,7 @@ export async function handleHeartbeat(
   } catch (err) {
     logger.error(
       {
-        err: err instanceof Error ? err.message : String(err),
+        err,
         equipmentId: msg.equipment_id,
       },
       'HEARTBEAT insert failed',

@@ -29,7 +29,7 @@ function parsePayload(payload: Buffer): ControlCmdPayload | null {
     return JSON.parse(payload.toString('utf8')) as ControlCmdPayload;
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err },
       'CONTROL_CMD JSON parse failed, dropping message',
     );
     return null;
@@ -73,7 +73,7 @@ export async function handleControlCmd(
   } catch (err) {
     logger.error(
       {
-        err: err instanceof Error ? err.message : String(err),
+        err,
         equipmentId,
         command: msg.command,
       },

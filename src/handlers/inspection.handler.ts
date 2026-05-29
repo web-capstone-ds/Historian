@@ -55,7 +55,7 @@ function parsePayload(payload: Buffer): InspectionPayload | null {
     return JSON.parse(payload.toString('utf8')) as InspectionPayload;
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err },
       'INSPECTION_RESULT JSON parse failed, dropping message',
     );
     return null;
@@ -186,7 +186,7 @@ export async function handleInspectionResult(
   } catch (err) {
     logger.error(
       {
-        err: err instanceof Error ? err.message : String(err),
+        err,
         equipmentId: msg.equipment_id,
         lotId: msg.lot_id,
         unitId: msg.unit_id,

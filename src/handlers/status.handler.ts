@@ -35,7 +35,7 @@ function parsePayload(payload: Buffer): StatusUpdatePayload | null {
     return JSON.parse(payload.toString('utf8')) as StatusUpdatePayload;
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err },
       'STATUS_UPDATE JSON parse failed, dropping message',
     );
     return null;
@@ -87,7 +87,7 @@ export async function handleStatusUpdate(
   } catch (err) {
     logger.error(
       {
-        err: err instanceof Error ? err.message : String(err),
+        err,
         equipmentId: msg.equipment_id,
       },
       'STATUS_UPDATE insert failed',

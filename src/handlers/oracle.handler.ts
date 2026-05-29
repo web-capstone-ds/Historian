@@ -37,7 +37,7 @@ function parsePayload(payload: Buffer): OracleAnalysisPayload | null {
     return JSON.parse(payload.toString('utf8')) as OracleAnalysisPayload;
   } catch (err) {
     logger.error(
-      { err: err instanceof Error ? err.message : String(err) },
+      { err },
       'ORACLE_ANALYSIS JSON parse failed, dropping message',
     );
     return null;
@@ -82,7 +82,7 @@ export async function handleOracleAnalysis(
   } catch (err) {
     logger.error(
       {
-        err: err instanceof Error ? err.message : String(err),
+        err,
         equipmentId: msg.equipment_id,
         lotId: msg.lot_id,
         judgment: msg.judgment,
