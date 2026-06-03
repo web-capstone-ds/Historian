@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger.js';
 import { getPool, type DbPool } from '../db/pool.js';
 import { BatchInserter } from '../db/batch-inserter.js';
+import { accumulateGeometric } from '../utils/geometric-aggregator.js';
 
 // 작업명세서 §3.2 / §6.2 INSPECTION_RESULT 페이로드
 export interface InspectionPayload {
@@ -154,6 +155,9 @@ export async function handleInspectionResult(
       'INSPECTION_RESULT equipment_id mismatch between topic and payload',
     );
   }
+
+  // Cpk용 lot 단위 치수 분포 누적 — PASS drop 무관, 전 유닛 대상 (LOT_END에서 finalize)
+  accumulateGeometric(msg.lot_id, msg.geometric);
 
   // 배치 인서터가 초기화돼 있으면 배치 경로, 아니면 단건 경로로 폴백
   if (batchInserter) {

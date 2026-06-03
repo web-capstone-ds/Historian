@@ -102,8 +102,13 @@ CREATE TABLE IF NOT EXISTS lot_ends (
     pass_count          INTEGER             NOT NULL,
     fail_count          INTEGER             NOT NULL,
     yield_pct           DOUBLE PRECISION    NOT NULL,
-    lot_duration_sec    INTEGER             NOT NULL
+    lot_duration_sec    INTEGER             NOT NULL,
+    -- Cpk용 lot 단위 치수 분포 집계(PASS+FAIL 전체): {metric: {n, mean, stdev, min, max}}
+    geometric_stats     JSONB
 );
+
+-- 기존 배포 DB(컬럼 미존재) 호환
+ALTER TABLE lot_ends ADD COLUMN IF NOT EXISTS geometric_stats JSONB;
 
 SELECT create_hypertable('lot_ends', 'time', if_not_exists => TRUE);
 

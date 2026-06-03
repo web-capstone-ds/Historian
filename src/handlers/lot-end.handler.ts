@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger.js';
 import { getPool, type DbPool } from '../db/pool.js';
 import { getStatus } from '../utils/equipment-cache.js';
+import { finalizeGeometric, type GeometricStats } from '../utils/geometric-aggregator.js';
 
 // LOT_END 페이로드에는 recipe_id/operator_id가 없다 — STATUS 캐시에서 enrichment (§10)
 export interface LotEndPayload {
@@ -22,11 +23,13 @@ const INSERT_SQL = `
   INSERT INTO lot_ends (
     time, message_id, equipment_id, lot_id, lot_status,
     recipe_id, operator_id,
-    total_units, pass_count, fail_count, yield_pct, lot_duration_sec
+    total_units, pass_count, fail_count, yield_pct, lot_duration_sec,
+    geometric_stats
   ) VALUES (
     $1, $2, $3, $4, $5,
     $6, $7,
-    $8, $9, $10, $11, $12
+    $8, $9, $10, $11, $12,
+    $13
   )
 `;
 
@@ -65,6 +68,7 @@ export async function insertLotEnd(
   pool: DbPool,
   msg: LotEndPayload,
   enrichment: EnrichedLotEnd,
+  geometricStats: GeometricStats | null = null,
 ): Promise<void> {
   await pool.query(INSERT_SQL, [
     msg.timestamp,
@@ -79,6 +83,7 @@ export async function insertLotEnd(
     msg.fail_count,
     msg.yield_pct,
     msg.lot_duration_sec,
+    geometricStats ? JSON.stringify(geometricStats) : null,
   ]);
 }
 
@@ -97,9 +102,11 @@ export async function handleLotEnd(
   }
 
   const enrichment = enrichLotEnd(msg.equipment_id);
+  // Cpk용 lot 단위 치수 분포 마감 (누적 없으면 null → 컬럼 null 적재, AI는 per-record fallback)
+  const geometricStats = finalizeGeometric(msg.lot_id);
 
   try {
-    await insertLotEnd(getPool(), msg, enrichment);
+    await insertLotEnd(getPool(), msg, enrichment, geometricStats);
   } catch (err) {
     logger.error(
       {
